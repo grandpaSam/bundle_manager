@@ -1,4 +1,7 @@
 ### Bundle Manager
+This app is hard dependant on my item_sku_generation app. 
+
+It also uses the attribute compatibility map doc type from the template_bom_exploder app but it is not a hard depandency. You will have to just live with 1 to 1 mapping with item attributes.
 
 Rule-driven Product Bundle generation
 
@@ -12,21 +15,7 @@ bench get-app $URL_OF_THIS_REPO --branch main
 bench install-app bundle_manager
 ```
 
-### Contributing
 
-This app uses `pre-commit` for code formatting and linting. Please [install pre-commit](https://pre-commit.com/#installation) and enable it for this repository:
-
-```bash
-cd apps/bundle_manager
-pre-commit install
-```
-
-Pre-commit is configured to use the following tools for checking and formatting your code:
-
-- ruff
-- eslint
-- prettier
-- pyupgrade
 
 ### License
 

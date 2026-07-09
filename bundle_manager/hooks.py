@@ -43,7 +43,7 @@ app_license = "gpl-3.0"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {"Item": "public/js/item.js"}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -87,6 +87,7 @@ app_license = "gpl-3.0"
 
 # before_install = "bundle_manager.install.before_install"
 # after_install = "bundle_manager.install.after_install"
+after_migrate = "bundle_manager.setup.install.after_migrate"
 
 # Uninstallation
 # ------------
@@ -138,13 +139,11 @@ app_license = "gpl-3.0"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	"Sales Order": {
+		"validate": "bundle_manager.overrides.sales_order.validate_bundle_requirements",
+	},
+}
 
 # Scheduled Tasks
 # ---------------

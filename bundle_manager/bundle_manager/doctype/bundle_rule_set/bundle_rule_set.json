@@ -1,0 +1,97 @@
+{
+ "actions": [],
+ "autoname": "field:title",
+ "creation": "2026-07-08 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "applies_to_item_group",
+  "disabled",
+  "component_rules_section",
+  "component_rules",
+  "escape_hatch_section",
+  "resolver_script"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "applies_to_item_group",
+   "fieldtype": "Link",
+   "label": "Applies To Item Group",
+   "options": "Item Group",
+   "description": "Informational/filtering only — dispatch to this rule set is always via the Item's own Bundle Rule Set link, not this field."
+  },
+  {
+   "default": "0",
+   "fieldname": "disabled",
+   "fieldtype": "Check",
+   "label": "Disabled",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "component_rules_section",
+   "fieldtype": "Section Break",
+   "label": "Component Rules"
+  },
+  {
+   "fieldname": "component_rules",
+   "fieldtype": "Table",
+   "label": "Component Rules",
+   "options": "Bundle Component Rule",
+   "description": "Evaluated top to bottom. Ignored entirely if a Resolver Script is set below."
+  },
+  {
+   "fieldname": "escape_hatch_section",
+   "fieldtype": "Section Break",
+   "label": "Escape Hatch",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "resolver_script",
+   "fieldtype": "Code",
+   "label": "Resolver Script",
+   "options": "Python",
+   "description": "Optional. For rule sets that can't be expressed as simple component rules. If set, the Component Rules table above is skipped entirely and this script runs instead — it is fully responsible for creating the Product Bundle. `item_code` is available as a local variable. Requires the Script Manager role to set or change."
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-08 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Bundle Manager",
+ "name": "Bundle Rule Set",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Stock Manager"
+  },
+  {
+   "read": 1,
+   "role": "Sales User"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

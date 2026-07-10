@@ -105,9 +105,30 @@ def _resolve_components(rule_set, item_code: str) -> list[dict]:
 	components = []
 
 	for row in rule_set.component_rules:
+		# Resolved before the condition runs so conditions can inspect the
+		# fully-resolved component item code too, not just the kit's own
+		# item_code and its attributes. Resolution failures are deferred
+		# (not thrown here) since an excluded row's template is allowed to be
+		# unresolvable - e.g. a placeholder attribute that only applies to
+		# other kit families.
+		try:
+			resolved_item_code = row.component_item_template.format_map(_AttributeFormatMap(attributes))
+			resolve_error = None
+		except (KeyError, IndexError) as e:
+			resolved_item_code = None
+			resolve_error = e
+
 		if row.condition:
 			try:
-				included = frappe.safe_eval(row.condition, {"attributes": attributes, "frappe": frappe})
+				included = frappe.safe_eval(
+					row.condition,
+					{
+						"attributes": attributes,
+						"item_code": item_code,
+						"component_item_code": resolved_item_code,
+						"frappe": frappe,
+					},
+				)
 			except Exception as e:
 				frappe.throw(
 					_(
@@ -126,16 +147,14 @@ def _resolve_components(rule_set, item_code: str) -> list[dict]:
 		if not included:
 			continue
 
-		try:
-			resolved_item_code = row.component_item_template.format_map(_AttributeFormatMap(attributes))
-		except (KeyError, IndexError) as e:
+		if resolve_error is not None:
 			frappe.throw(
 				_(
 					"Bundle Rule Set {0}, row #{1}: could not resolve placeholder {2} in template {3} for item {4}."
 				).format(
 					frappe.bold(rule_set.name),
 					row.idx,
-					e,
+					resolve_error,
 					frappe.bold(row.component_item_template),
 					frappe.bold(item_code),
 				)

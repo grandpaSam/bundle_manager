@@ -246,15 +246,7 @@ class TestBundleResolver(IntegrationTestCase):
 			resolve_bundle(kit)
 
 	def test_resolver_script_escape_hatch(self):
-		script = (
-			"item = frappe.get_doc('Item', item_code)\n"
-			"item.is_stock_item = 0\n"
-			"frappe.get_doc({\n"
-			"    'doctype': 'Product Bundle',\n"
-			"    'new_item_code': item_code,\n"
-			"    'items': [{'item_code': 'TEST-BM-MAGAZINE', 'qty': 1}],\n"
-			"}).insert(ignore_permissions=True)\n"
-		)
+		script = "components = [{'item_code': 'TEST-BM-MAGAZINE', 'qty': 1}]\n"
 		rule_set = self._make_rule_set(
 			title="Test BM Rule Set - Script",
 			resolver_script=script,
@@ -265,6 +257,16 @@ class TestBundleResolver(IntegrationTestCase):
 		self._docs_to_delete.append(("Product Bundle", result))
 		self.assertEqual(result, kit)
 		self.assertTrue(frappe.db.exists("Product Bundle", kit))
+
+	def test_resolver_script_missing_components_local_raises_clear_error(self):
+		rule_set = self._make_rule_set(
+			title="Test BM Rule Set - Script No Components",
+			resolver_script="pass\n",
+		)
+		kit = self._make_item("TEST-BM-KIT-SCRIPTNOCOMP", requires_bundle=True, rule_set=rule_set.name)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "components"):
+			resolve_bundle(kit)
 
 	def test_preview_bundle_resolves_components_without_creating(self):
 		rule_set = self._make_rule_set(
@@ -280,14 +282,8 @@ class TestBundleResolver(IntegrationTestCase):
 		self.assertEqual(result, {"created": False, "components": [{"item_code": self.magazine, "qty": 1}]})
 		self.assertFalse(frappe.db.exists("Product Bundle", kit))
 
-	def test_preview_bundle_runs_resolver_script_immediately(self):
-		script = (
-			"frappe.get_doc({\n"
-			"    'doctype': 'Product Bundle',\n"
-			"    'new_item_code': item_code,\n"
-			"    'items': [{'item_code': 'TEST-BM-MAGAZINE', 'qty': 1}],\n"
-			"}).insert(ignore_permissions=True)\n"
-		)
+	def test_preview_bundle_resolves_components_via_resolver_script_without_creating(self):
+		script = "components = [{'item_code': 'TEST-BM-MAGAZINE', 'qty': 1}]\n"
 		rule_set = self._make_rule_set(
 			title="Test BM Rule Set - Preview Script",
 			resolver_script=script,
@@ -295,7 +291,6 @@ class TestBundleResolver(IntegrationTestCase):
 		kit = self._make_item("TEST-BM-KIT-PREVIEWSCRIPT", requires_bundle=True, rule_set=rule_set.name)
 
 		result = preview_bundle(kit)
-		self._docs_to_delete.append(("Product Bundle", kit))
 
-		self.assertEqual(result, {"created": True, "name": kit})
-		self.assertTrue(frappe.db.exists("Product Bundle", kit))
+		self.assertEqual(result, {"created": False, "components": [{"item_code": self.magazine, "qty": 1}]})
+		self.assertFalse(frappe.db.exists("Product Bundle", kit))

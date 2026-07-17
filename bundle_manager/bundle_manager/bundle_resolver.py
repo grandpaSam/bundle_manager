@@ -178,6 +178,43 @@ def _resolve_components(rule_set, item_code: str) -> list[dict]:
 	return components
 
 
+def _resolve_components_via_script(rule_set, item_code: str) -> list[dict]:
+	"""Runs resolver_script and reads back the `components` local it's expected
+	to set - a list of {item_code, qty} dicts, same shape _resolve_components
+	produces from the rule table. The script only computes components; it does
+	not create the Product Bundle itself, so this path stays previewable same
+	as the rule table path (see resolve_bundle/preview_bundle)."""
+	_globals, _locals = safe_exec(
+		rule_set.resolver_script,
+		_locals={"item_code": item_code},
+		restrict_commit_rollback=False,
+		script_filename=rule_set.name,
+	)
+	components = _locals.get("components")
+	if not isinstance(components, list):
+		frappe.throw(
+			_(
+				"Resolver Script on Bundle Rule Set {0} did not set a 'components' list for item {1}."
+			).format(frappe.bold(rule_set.name), frappe.bold(item_code))
+		)
+
+	for component in components:
+		if not frappe.db.exists("Item", component.get("item_code")):
+			frappe.throw(
+				_(
+					"Resolver Script on Bundle Rule Set {0}: resolved component item {1} does not exist (for item {2})."
+				).format(frappe.bold(rule_set.name), frappe.bold(component.get("item_code")), frappe.bold(item_code))
+			)
+
+	return components
+
+
+def _resolve_components_for(rule_set, item_code: str) -> list[dict]:
+	if rule_set.resolver_script:
+		return _resolve_components_via_script(rule_set, item_code)
+	return _resolve_components(rule_set, item_code)
+
+
 @frappe.whitelist()
 def resolve_bundle(item_code: str) -> str:
 	"""Ensures a Product Bundle exists for item_code, creating it if missing.
@@ -191,26 +228,11 @@ def resolve_bundle(item_code: str) -> str:
 
 	rule_set = _get_rule_set(item_code)
 
-	if rule_set.resolver_script:
-		safe_exec(
-			rule_set.resolver_script,
-			_locals={"item_code": item_code},
-			restrict_commit_rollback=False,
-			script_filename=rule_set.name,
-		)
-		if not frappe.db.exists("Product Bundle", item_code):
-			frappe.throw(
-				_(
-					"Resolver Script on Bundle Rule Set {0} did not create a Product Bundle for item {1}."
-				).format(frappe.bold(rule_set.name), frappe.bold(item_code))
-			)
-		return item_code
-
 	bundle = frappe.get_doc(
 		{
 			"doctype": "Product Bundle",
 			"new_item_code": item_code,
-			"items": _resolve_components(rule_set, item_code),
+			"items": _resolve_components_for(rule_set, item_code),
 		}
 	)
 	bundle.insert()
@@ -222,18 +244,13 @@ def preview_bundle(item_code: str) -> dict:
 	"""Used by the Item form's "Generate Bundle" button, so the user sees an
 	unsaved draft Product Bundle to review before it's actually created.
 
-	A resolver_script is arbitrary code that's fully responsible for creating
-	the Product Bundle itself (see resolve_bundle) - there's nothing to
-	preview, so it's run immediately same as resolve_bundle. Otherwise the
-	rule table's components are resolved WITHOUT creating anything, so the
-	caller can open an unsaved Product Bundle with them prefilled.
+	Components are resolved WITHOUT creating anything - whether they come from
+	the rule table or a resolver_script - so the caller can open an unsaved
+	Product Bundle with them prefilled either way.
 	"""
 	if frappe.db.exists("Product Bundle", item_code):
 		return {"created": True, "name": item_code}
 
 	rule_set = _get_rule_set(item_code)
 
-	if rule_set.resolver_script:
-		return {"created": True, "name": resolve_bundle(item_code)}
-
-	return {"created": False, "components": _resolve_components(rule_set, item_code)}
+	return {"created": False, "components": _resolve_components_for(rule_set, item_code)}

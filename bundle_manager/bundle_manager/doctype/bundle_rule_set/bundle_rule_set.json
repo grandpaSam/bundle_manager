@@ -59,7 +59,7 @@
    "fieldtype": "Code",
    "label": "Resolver Script",
    "options": "Python",
-   "description": "Optional. For rule sets that can't be expressed as simple component rules. If set, the Component Rules table above is skipped entirely and this script runs instead — it is fully responsible for creating the Product Bundle. `item_code` is available as a local variable. Requires the Script Manager role to set or change."
+   "description": "Optional. For rule sets that can't be expressed as simple component rules. If set, the Component Rules table above is skipped entirely and this script runs instead. `item_code` is available as a local variable; the script must set a `components` local to a list of {item_code, qty} dicts — it must NOT create the Product Bundle itself, that's handled by the engine (same as the rule table) so previews work. Do not define functions that call each other or read this script's other variables — safe_exec() runs with separate globals/locals namespaces, so cross-references between them raise NameError. Use f-strings, not .format() — it's blocked as an unsafe attribute. Requires the Script Manager role to set or change."
   }
  ],
  "index_web_pages_for_search": 1,
